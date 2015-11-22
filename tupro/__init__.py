@@ -12,23 +12,24 @@ def defaultify(f):
 	return result_func
 
 
-def is_valid_typecheck(instance, cls):
-	if cls is Signature.empty: # no annotation was there
+def valid_typecheck(instance, annotation_cls):
+	if annotation_cls is Signature.empty: # no annotation was there
 		return True
 	else:
-		return isinstance(instance, cls)
+		return isinstance(instance, annotation_cls)
 
 def typecheck(f):
 	sig = signature(f)
-	parameters = sig.parameters
+
+	annotations = ( param.annotation for param in sig.parameters.values() )
 
 	def result(*args):
-		if all( 
-			is_valid_typecheck(arg, param.annotation) 
-				for (arg, param) in zip(args, parameters.values()) ):
+		args_and_annotations = zip(args, annotations)
+		
+		if all(valid_typecheck(arg, cls) for (arg, cls) in args_and_annotations): 
 			value = f(*args)
 
-			if is_valid_typecheck(value, sig.return_annotation):
+			if valid_typecheck(value, sig.return_annotation):
 				return value
 
 			else:
